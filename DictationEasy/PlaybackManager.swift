@@ -1,0 +1,105 @@
+import Foundation
+import SwiftUI
+
+@MainActor
+class PlaybackManager: ObservableObject {
+    @Published var sentences: [String] = []
+    @Published var currentSentenceIndex: Int = 0
+    @Published var currentRepetition: Int = 1
+    @Published var isPlaying: Bool = false
+    @Published var error: String?
+
+    private var timer: Timer?
+    private var ttsManager: TTSManagerProtocol?
+    private var settings: SettingsModel?
+
+    func setSentences(_ text: String) {
+        sentences = text.components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        currentSentenceIndex = 0
+        currentRepetition = 1
+    }
+
+    func getCurrentSentence() -> String? {
+        guard !sentences.isEmpty, currentSentenceIndex < sentences.count else {
+            return nil
+        }
+        return sentences[currentSentenceIndex]
+    }
+
+    func nextSentence() -> String? {
+        guard !sentences.isEmpty else { return nil }
+        currentSentenceIndex = (currentSentenceIndex + 1) % sentences.count
+        currentRepetition = 1
+        return getCurrentSentence()
+    }
+
+    func previousSentence() -> String? {
+        guard !sentences.isEmpty else { return nil }
+        currentSentenceIndex = currentSentenceIndex > 0 ? currentSentenceIndex - 1 : sentences.count - 1
+        currentRepetition = 1
+        return getCurrentSentence()
+    }
+
+    func startTeacherMode(ttsManager: TTSManagerProtocol, settings: SettingsModel) {
+        guard getCurrentSentence() != nil else {
+            error = "No text available 沒有文字可播放"
+            return
+        }
+
+        self.ttsManager = ttsManager
+        self.settings = settings
+        isPlaying = true
+        playCurrentSentence()
+    }
+
+    private func playCurrentSentence() {
+        guard isPlaying, let currentSentence = getCurrentSentence(), let ttsManager = ttsManager, let settings = settings else { return }
+
+        ttsManager.speak(
+            text: currentSentence,
+            language: settings.audioLanguage,
+            rate: settings.playbackSpeed
+        )
+
+        timer = Timer.scheduledTimer(withTimeInterval: TimeInterval(settings.pauseDuration), repeats: false) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self = self else { return }
+                guard self.isPlaying else { return }
+
+                if self.currentRepetition < settings.repetitions {
+                    self.currentRepetition += 1
+                    self.playCurrentSentence()
+                } else {
+                    if self.nextSentence() != nil {
+                        self.currentRepetition = 1
+                        self.playCurrentSentence()
+                    } else {
+                        self.stopPlayback()
+                    }
+                }
+            }
+        }
+    }
+
+    func stopPlayback() {
+        isPlaying = false
+        timer?.invalidate()
+        timer = nil
+        currentRepetition = 1
+        ttsManager = nil
+        settings = nil
+    }
+
+    func getProgressText() -> String {
+        guard !sentences.isEmpty else { return "No sentences available 沒有句子可播放" }
+        guard let settings = settings else { return "Settings not available 設置不可用" }
+
+        if settings.playbackMode == .teacherMode {
+            return "Sentence 句子 \(currentSentenceIndex + 1) of 共 \(sentences.count) (Reading 朗讀 \(currentRepetition) of 共 \(settings.repetitions))"
+        } else {
+            return "Sentence 句子 \(currentSentenceIndex + 1) of 共 \(sentences.count)"
+        }
+    }
+}
