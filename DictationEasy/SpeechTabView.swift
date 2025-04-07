@@ -15,9 +15,20 @@ struct SpeechTabView: View {
                 // Text Display
                 if settings.showText {
                     ScrollView {
-                        Text(settings.sentences.joined(separator: "\n"))
-                            .padding()
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(Array(settings.sentences.enumerated()), id: \.offset) { index, sentence in
+                                Text(sentence)
+                                    .padding(8)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(
+                                        shouldHighlightSentence(index: index)
+                                            ? Color.yellow.opacity(0.3)
+                                            : Color.clear
+                                    )
+                                    .cornerRadius(8)
+                            }
+                        }
+                        .padding()
                     }
                     .frame(maxHeight: 200)
                     .background(Color(.systemGray6))
@@ -83,6 +94,7 @@ struct SpeechTabView: View {
                                 )
                             case .sentenceBySentence:
                                 if let sentence = playbackManager.getCurrentSentence() {
+                                    playbackManager.isPlaying = true
                                     ttsManager.speak(
                                         text: sentence,
                                         language: settings.audioLanguage,
@@ -169,6 +181,12 @@ struct SpeechTabView: View {
                 playbackManager.setSentences(settings.extractedText)
             }
         }
+    }
+
+    private func shouldHighlightSentence(index: Int) -> Bool {
+        guard playbackManager.isPlaying else { return false }
+        guard settings.playbackMode != .wholePassage else { return false }
+        return index == playbackManager.currentSentenceIndex
     }
 }
 
