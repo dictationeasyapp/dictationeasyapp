@@ -32,8 +32,19 @@ class SettingsModel: ObservableObject {
     @Published var pauseDuration: Int = 5
     @Published var repetitions: Int = 2
     @Published var showText: Bool = true
-    @Published var extractedText: String = ""
+    @Published var extractedText: String = "" {
+        didSet {
+            updateSentences()
+        }
+    }
     @Published var sentences: [String] = []
+
+    private func updateSentences() {
+        sentences = extractedText
+            .components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
 
     func isSelectedVoiceAvailable() -> Bool {
         let voices = AVSpeechSynthesisVoice.speechVoices()
