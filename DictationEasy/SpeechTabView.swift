@@ -63,7 +63,7 @@ struct SpeechTabView: View {
                 VStack(alignment: .leading) {
                     Text("Speed 速度: \(String(format: "%.1f", settings.playbackSpeed))x")
                     Slider(value: $settings.playbackSpeed,
-                           in: 0.5...2.0,
+                           in: 0.1...1.2,
                            step: 0.1)
                 }
                 .padding(.horizontal)
