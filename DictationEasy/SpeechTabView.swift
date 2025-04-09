@@ -14,26 +14,38 @@ struct SpeechTabView: View {
 
                 // Text Display
                 if settings.showText {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 8) {
-                            ForEach(Array(settings.sentences.enumerated()), id: \.offset) { index, sentence in
-                                Text(sentence)
-                                    .padding(8)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(
-                                        shouldHighlightSentence(index: index)
-                                            ? Color.yellow.opacity(0.3)
-                                            : Color.clear
-                                    )
-                                    .cornerRadius(8)
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 8) {
+                                ForEach(Array(settings.sentences.enumerated()), id: \.offset) { index, sentence in
+                                    Text(sentence)
+                                        .padding(8)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(
+                                            shouldHighlightSentence(index: index)
+                                                ? Color.yellow.opacity(0.3)
+                                                : Color.clear
+                                        )
+                                        .cornerRadius(8)
+                                        .id(index)  // Add id for scrolling
+                                }
+                            }
+                            .padding()
+                        }
+                        .frame(maxHeight: 200)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
+                        .padding(.horizontal)
+                        .onChange(of: playbackManager.currentSentenceIndex) { newIndex in
+                            if settings.showText &&
+                               playbackManager.isPlaying &&
+                               (settings.playbackMode == .teacherMode || settings.playbackMode == .sentenceBySentence) {
+                                withAnimation {
+                                    proxy.scrollTo(newIndex, anchor: .center)
+                                }
                             }
                         }
-                        .padding()
                     }
-                    .frame(maxHeight: 200)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(10)
-                    .padding(.horizontal)
                 }
 
                 // Playback Mode Picker
