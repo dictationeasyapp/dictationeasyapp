@@ -14,9 +14,13 @@ class PlaybackManager: ObservableObject {
     private var settings: SettingsModel?
 
     func setSentences(_ text: String) {
-        sentences = text.components(separatedBy: "\n")
+        // Split text into paragraphs first
+        let paragraphs = text.components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
+        
+        // Split each paragraph into sentences and flatten the result
+        sentences = paragraphs.flatMap { $0.splitIntoSentences() }
         currentSentenceIndex = 0
         currentRepetition = 1
     }

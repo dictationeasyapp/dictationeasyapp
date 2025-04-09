@@ -1,5 +1,55 @@
-import Foundation
+import SwiftUI
 import AVFoundation
+
+// String extension for sentence splitting
+extension String {
+    func splitIntoSentences() -> [String] {
+        // Define punctuation patterns
+        let englishPunctuation = "[.!?]"
+        let chinesePunctuation = "[。！？⋯⋯]" // Fixed to use two ellipsis characters
+        let quotesAndParens = "[\"'()（）]"   // Fixed quote escaping
+        
+        // Pattern to match sentences:
+        // 1. Look for punctuation (English or Chinese)
+        // 2. Optionally followed by quotes or parentheses
+        // 3. Followed by whitespace or end of string
+        let pattern = "([^\(englishPunctuation)\(chinesePunctuation)]+[\(englishPunctuation)\(chinesePunctuation)]+[\(quotesAndParens)]*\\s*)" // Allow multiple punctuation marks
+        
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            // If regex fails, return the whole text as one sentence
+            return [self].filter { !$0.isEmpty }
+        }
+        
+        let nsString = self as NSString
+        let matches = regex.matches(in: self, options: [], range: NSRange(location: 0, length: nsString.length))
+        
+        var sentences: [String] = []
+        var lastEnd = 0
+        
+        // Extract sentences from matches
+        for match in matches {
+            let range = match.range(at: 1)
+            let sentence = nsString.substring(with: range)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !sentence.isEmpty {
+                sentences.append(sentence)
+            }
+            lastEnd = range.location + range.length
+        }
+        
+        // Handle any remaining text after the last punctuation
+        if lastEnd < nsString.length {
+            let remainingText = nsString.substring(from: lastEnd)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !remainingText.isEmpty {
+                sentences.append(remainingText)
+            }
+        }
+        
+        // If no sentences were found, return the original text as one sentence
+        return sentences.isEmpty ? [self].filter { !$0.isEmpty } : sentences
+    }
+}
 
 enum PlaybackMode: String, CaseIterable {
     case wholePassage = "Whole Passage 整段"
@@ -40,10 +90,13 @@ class SettingsModel: ObservableObject {
     @Published var sentences: [String] = []
 
     private func updateSentences() {
-        sentences = extractedText
-            .components(separatedBy: "\n")
+        // Split text into paragraphs first
+        let paragraphs = extractedText.components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
+        
+        // Split each paragraph into sentences and flatten the result
+        sentences = paragraphs.flatMap { $0.splitIntoSentences() }
     }
 
     func isSelectedVoiceAvailable() -> Bool {
