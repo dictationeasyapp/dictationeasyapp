@@ -99,6 +99,7 @@ struct SpeechTabView: View {
                         } else {
                             switch settings.playbackMode {
                             case .wholePassage:
+                                playbackManager.isPlaying = true  // Set before speaking to ensure proper state
                                 ttsManager.speak(
                                     text: settings.sentences.joined(separator: ". "),
                                     language: settings.audioLanguage,
@@ -126,6 +127,29 @@ struct SpeechTabView: View {
                             .padding()
                             .background(Color.blue)
                             .cornerRadius(10)
+                    }
+                    .disabled(settings.sentences.isEmpty)
+
+                    // Restart Button (Whole Passage mode only)
+                    if settings.playbackMode == .wholePassage {
+                        Button(action: {
+                            ttsManager.stopSpeaking()
+                            playbackManager.isPlaying = true
+                            ttsManager.speak(
+                                text: settings.sentences.joined(separator: ". "),
+                                language: settings.audioLanguage,
+                                rate: settings.playbackSpeed
+                            )
+                        }) {
+                            Label("Restart 重新開始", systemImage: "arrow.clockwise")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.blue)
+                                .cornerRadius(10)
+                        }
+                        .disabled(settings.sentences.isEmpty)
                     }
 
                     // Restart Button (Teacher Mode only)
