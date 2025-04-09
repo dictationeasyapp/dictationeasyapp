@@ -30,7 +30,18 @@ class PlaybackManager: ObservableObject {
 
     func nextSentence() -> String? {
         guard !sentences.isEmpty else { return nil }
-        currentSentenceIndex = (currentSentenceIndex + 1) % sentences.count
+        let nextIndex = currentSentenceIndex + 1
+        if nextIndex < sentences.count {
+            currentSentenceIndex = nextIndex
+            currentRepetition = 1
+            return getCurrentSentence()
+        }
+        // In Teacher Mode, don't loop back to the beginning
+        if let settings = settings, settings.playbackMode == .teacherMode {
+            return nil
+        }
+        // In other modes, loop back to the beginning
+        currentSentenceIndex = 0
         currentRepetition = 1
         return getCurrentSentence()
     }
@@ -55,36 +66,48 @@ class PlaybackManager: ObservableObject {
     }
 
     private func playCurrentSentence() {
-        guard isPlaying, let currentSentence = getCurrentSentence(), let ttsManager = ttsManager, let settings = settings else { return }
+        guard isPlaying,
+              let currentSentence = getCurrentSentence(),
+              let settings = settings else { return }
+        
+        guard let ttsManager = self.ttsManager else { return }
 
+        // Set up completion handler before speaking
+        self.ttsManager?.onSpeechCompletion = { [weak self] in
+            guard let self = self, self.isPlaying else { return }
+            
+            // Schedule the next step after the pause duration
+            DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(settings.pauseDuration)) {
+                Task { @MainActor [weak self] in
+                    guard let self = self, self.isPlaying else { return }
+                    
+                    if self.currentRepetition < settings.repetitions {
+                        self.currentRepetition += 1
+                        self.playCurrentSentence()
+                    } else {
+                        if self.nextSentence() != nil {
+                            self.currentRepetition = 1
+                            self.playCurrentSentence()
+                        } else {
+                            self.stopPlayback()
+                        }
+                    }
+                }
+            }
+        }
+
+        // Start speaking the current sentence
         ttsManager.speak(
             text: currentSentence,
             language: settings.audioLanguage,
             rate: settings.playbackSpeed
         )
-
-        timer = Timer.scheduledTimer(withTimeInterval: TimeInterval(settings.pauseDuration), repeats: false) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                guard let self = self else { return }
-                guard self.isPlaying else { return }
-
-                if self.currentRepetition < settings.repetitions {
-                    self.currentRepetition += 1
-                    self.playCurrentSentence()
-                } else {
-                    if self.nextSentence() != nil {
-                        self.currentRepetition = 1
-                        self.playCurrentSentence()
-                    } else {
-                        self.stopPlayback()
-                    }
-                }
-            }
-        }
     }
 
     func stopPlayback() {
         isPlaying = false
+        self.ttsManager?.stopSpeaking()
+        self.ttsManager?.onSpeechCompletion = nil
         timer?.invalidate()
         timer = nil
         currentRepetition = 1

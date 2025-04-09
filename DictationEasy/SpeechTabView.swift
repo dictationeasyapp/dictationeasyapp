@@ -50,7 +50,7 @@ struct SpeechTabView: View {
                     VStack(spacing: 10) {
                         Stepper("Pause Duration 暫停時間: \(settings.pauseDuration)s",
                                 value: $settings.pauseDuration,
-                                in: 1...5)
+                                in: 1...10)
 
                         Stepper("Repetitions 重複次數: \(settings.repetitions)",
                                 value: $settings.repetitions,
@@ -61,10 +61,10 @@ struct SpeechTabView: View {
 
                 // Speed Slider
                 VStack(alignment: .leading) {
-                    Text("Speed 速度: \(String(format: "%.1f", settings.playbackSpeed))x")
+                    Text("Speed 速度: \(String(format: "%.2f", settings.playbackSpeed))x")
                     Slider(value: $settings.playbackSpeed,
-                           in: 0.1...1.2,
-                           step: 0.1)
+                           in: 0.05...1.0,
+                           step: 0.05)
                 }
                 .padding(.horizontal)
 
@@ -116,10 +116,27 @@ struct SpeechTabView: View {
                             .cornerRadius(10)
                     }
 
+                    // Restart Button (Teacher Mode only)
+                    if settings.playbackMode == .teacherMode {
+                        Button(action: {
+                            playbackManager.currentSentenceIndex = 0
+                            playbackManager.startTeacherMode(ttsManager: ttsManager, settings: settings)
+                        }) {
+                            Label("Restart 重新開始", systemImage: "arrow.clockwise")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.blue)
+                                .cornerRadius(10)
+                        }
+                    }
+
                     // Navigation Buttons (Sentence by Sentence mode only)
                     if settings.playbackMode == .sentenceBySentence {
                         Button(action: {
                             if let sentence = playbackManager.previousSentence() {
+                                playbackManager.isPlaying = true
                                 ttsManager.speak(
                                     text: sentence,
                                     language: settings.audioLanguage,
@@ -138,6 +155,7 @@ struct SpeechTabView: View {
 
                         Button(action: {
                             if let sentence = playbackManager.nextSentence() {
+                                playbackManager.isPlaying = true
                                 ttsManager.speak(
                                     text: sentence,
                                     language: settings.audioLanguage,
@@ -173,9 +191,12 @@ struct SpeechTabView: View {
                 Spacer()
             }
             .navigationTitle("Speech 朗讀")
-            .onChange(of: settings.playbackMode) { _ in
+            .onChange(of: settings.playbackMode) { newMode in
                 playbackManager.stopPlayback()
                 ttsManager.stopSpeaking()
+                if newMode == .teacherMode {
+                    playbackManager.currentSentenceIndex = 0
+                }
             }
             .onAppear {
                 playbackManager.setSentences(settings.extractedText)

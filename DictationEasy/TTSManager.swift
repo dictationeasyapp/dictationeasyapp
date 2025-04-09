@@ -7,6 +7,8 @@ class TTSManager: NSObject, ObservableObject, TTSManagerProtocol {
     private let synthesizer = AVSpeechSynthesizer()
     @Published var isPlaying: Bool = false
     @Published var error: String?
+    
+    var onSpeechCompletion: (() -> Void)?
 
     override init() {
         super.init()
@@ -53,6 +55,7 @@ extension TTSManager: AVSpeechSynthesizerDelegate {
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
         Task { @MainActor in
             self.isPlaying = false
+            self.onSpeechCompletion?()
         }
     }
 

@@ -29,8 +29,8 @@ class SettingsModel: ObservableObject {
     @Published var playbackMode: PlaybackMode = .wholePassage
     @Published var audioLanguage: AudioLanguage = .english
     @Published var playbackSpeed: Double = 1.0
-    @Published var pauseDuration: Int = 2
-    @Published var repetitions: Int = 1
+    @Published var pauseDuration: Int = 5
+    @Published var repetitions: Int = 2
     @Published var showText: Bool = true
     @Published var extractedText: String = ""
     @Published var sentences: [String] = []
