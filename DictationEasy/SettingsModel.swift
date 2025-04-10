@@ -104,7 +104,10 @@ class SettingsModel: ObservableObject {
     @Published var pastDictations: [DictationEntry] = []
     @Published var editingDictationId: UUID? = nil
     
-    private let pastDictationsKey = "PastDictations"
+    private let pastDictationsFileURL: URL = {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("pastDictations.json")
+    }()
     
     init() {
         loadPastDictations()
@@ -172,7 +175,7 @@ class SettingsModel: ObservableObject {
     }
     
     func loadPastDictations() {
-        if let data = UserDefaults.standard.data(forKey: pastDictationsKey),
+        if let data = try? Data(contentsOf: pastDictationsFileURL),
            let decoded = try? JSONDecoder().decode([DictationEntry].self, from: data) {
             self.pastDictations = decoded
         }
@@ -200,7 +203,11 @@ class SettingsModel: ObservableObject {
         pastDictations.insert(entry, at: 0) // Add new entries at the beginning
         
         if let encoded = try? JSONEncoder().encode(pastDictations) {
-            UserDefaults.standard.set(encoded, forKey: pastDictationsKey)
+            do {
+                try encoded.write(to: pastDictationsFileURL, options: [.atomic, .completeFileProtection])
+            } catch {
+                print("Failed to save past dictations: \(error)")
+            }
         }
         
         #if DEBUG
@@ -219,7 +226,11 @@ class SettingsModel: ObservableObject {
         pastDictations.removeAll { $0.id == id }
         
         if let encoded = try? JSONEncoder().encode(pastDictations) {
-            UserDefaults.standard.set(encoded, forKey: pastDictationsKey)
+            do {
+                try encoded.write(to: pastDictationsFileURL, options: [.atomic, .completeFileProtection])
+            } catch {
+                print("Failed to save past dictations after deletion: \(error)")
+            }
         }
     }
 }

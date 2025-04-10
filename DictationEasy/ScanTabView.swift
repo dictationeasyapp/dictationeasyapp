@@ -1,6 +1,7 @@
 import SwiftUI
 import PhotosUI
 import Vision
+import Photos
 
 #if os(iOS)
 import UIKit
@@ -11,12 +12,14 @@ struct ScanTabView: View {
     @Binding var selectedTab: TabSelection
     @EnvironmentObject var ocrManager: OCRManager
     @Binding var isEditingPastDictation: Bool
-    let onNavigateToText: (Bool) -> Void // Closure to handle navigation
+    let onNavigateToText: (Bool) -> Void
     @State private var selectedItem: PhotosPickerItem?
     @State private var selectedImage: UIImage?
     @State private var isProcessing = false
     @State private var showError = false
     @State private var errorMessage = ""
+    @State private var showPermissionAlert = false
+    @State private var showLimitedAccessMessage = false
 
     var body: some View {
         NavigationView {
@@ -29,6 +32,9 @@ struct ScanTabView: View {
                             .background(Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)
+                    }
+                    .onTapGesture {
+                        checkPhotoLibraryPermission()
                     }
                     .onChange(of: selectedItem) { newItem in
                         if let newItem = newItem {
@@ -104,7 +110,7 @@ struct ScanTabView: View {
                                     settings.editingDictationId = entry.id
                                     settings.extractedText = entry.text
                                     isEditingPastDictation = true
-                                    onNavigateToText(true) // Indicate programmatic navigation
+                                    onNavigateToText(true)
                                     
                                     #if DEBUG
                                     print("ScanTabView - Selected entry for editing: \(entry.id)")
@@ -149,11 +155,64 @@ struct ScanTabView: View {
             }
             .padding()
             .navigationTitle("Scan 掃描")
+            .alert("Photo Library Access Denied 無法訪問照片庫", isPresented: $showPermissionAlert) {
+                Button("Go to Settings 前往設置", role: .none) {
+                    if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(settingsURL)
+                    }
+                }
+                Button("Cancel 取消", role: .cancel) { }
+            } message: {
+                Text("Please grant photo library access in Settings to scan images. 請在設置中授予照片庫訪問權限以掃描圖片。")
+            }
+            .alert("Limited Photo Access 照片訪問受限", isPresented: $showLimitedAccessMessage) {
+                Button("Select More Photos 選擇更多照片", role: .none) {
+                    if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(settingsURL)
+                    }
+                }
+                Button("Continue 繼續", role: .cancel) { }
+            } message: {
+                Text("You have limited photo access. Select more photos to scan, or continue with the current selection. 您已限制照片訪問。選擇更多照片進行掃描，或繼續使用當前選擇。")
+            }
             .alert("Error 錯誤", isPresented: $showError) {
                 Button("OK 確定", role: .cancel) { }
             } message: {
                 Text(errorMessage)
             }
+        }
+    }
+
+    private func checkPhotoLibraryPermission() {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        switch status {
+        case .authorized:
+            // Full access granted, proceed
+            showLimitedAccessMessage = false
+        case .limited:
+            // Limited access granted, show message to select more photos
+            showLimitedAccessMessage = true
+        case .denied, .restricted:
+            // Access denied or restricted, show alert
+            showPermissionAlert = true
+        case .notDetermined:
+            // Request permission
+            PHPhotoLibrary.requestAuthorization(for: .readWrite) { newStatus in
+                DispatchQueue.main.async {
+                    switch newStatus {
+                    case .authorized:
+                        showLimitedAccessMessage = false
+                    case .limited:
+                        showLimitedAccessMessage = true
+                    case .denied, .restricted:
+                        showPermissionAlert = true
+                    default:
+                        showPermissionAlert = true
+                    }
+                }
+            }
+        @unknown default:
+            showPermissionAlert = true
         }
     }
 
@@ -167,7 +226,7 @@ struct ScanTabView: View {
                     throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: ocrError])
                 }
                 isEditingPastDictation = false
-                onNavigateToText(true) // Indicate programmatic navigation
+                onNavigateToText(true)
             } catch {
                 errorMessage = error.localizedDescription
                 showError = true
