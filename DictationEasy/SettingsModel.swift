@@ -102,6 +102,7 @@ class SettingsModel: ObservableObject {
     }
     @Published var sentences: [String] = []
     @Published var pastDictations: [DictationEntry] = []
+    @Published var editingDictationId: UUID? = nil
     
     private let pastDictationsKey = "PastDictations"
     
@@ -182,12 +183,36 @@ class SettingsModel: ObservableObject {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else { return }
         
+        #if DEBUG
+        print("SettingsModel.savePastDictation - Current editingDictationId: \(String(describing: editingDictationId))")
+        #endif
+        
+        // If we're editing an existing entry, remove it first
+        if let editingId = editingDictationId {
+            #if DEBUG
+            print("SettingsModel.savePastDictation - Removing original entry with id: \(editingId)")
+            #endif
+            deletePastDictation(id: editingId)
+        }
+        
+        // Create and save the new entry
         let entry = DictationEntry(text: trimmedText)
         pastDictations.insert(entry, at: 0) // Add new entries at the beginning
         
         if let encoded = try? JSONEncoder().encode(pastDictations) {
             UserDefaults.standard.set(encoded, forKey: pastDictationsKey)
         }
+        
+        #if DEBUG
+        print("SettingsModel.savePastDictation - Saved new entry with id: \(entry.id)")
+        #endif
+        
+        // Clear the editing ID
+        editingDictationId = nil
+        
+        #if DEBUG
+        print("SettingsModel.savePastDictation - Cleared editingDictationId")
+        #endif
     }
     
     func deletePastDictation(id: UUID) {

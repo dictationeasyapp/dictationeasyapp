@@ -10,6 +10,8 @@ struct ScanTabView: View {
     @EnvironmentObject var settings: SettingsModel
     @Binding var selectedTab: TabSelection
     @EnvironmentObject var ocrManager: OCRManager
+    @Binding var isEditingPastDictation: Bool
+    let onNavigateToText: (Bool) -> Void // Closure to handle navigation
     @State private var selectedItem: PhotosPickerItem?
     @State private var selectedImage: UIImage?
     @State private var isProcessing = false
@@ -99,8 +101,15 @@ struct ScanTabView: View {
                         } else {
                             ForEach(settings.pastDictations) { entry in
                                 Button(action: {
+                                    settings.editingDictationId = entry.id
                                     settings.extractedText = entry.text
-                                    selectedTab = .text
+                                    isEditingPastDictation = true
+                                    onNavigateToText(true) // Indicate programmatic navigation
+                                    
+                                    #if DEBUG
+                                    print("ScanTabView - Selected entry for editing: \(entry.id)")
+                                    print("ScanTabView - Set editingDictationId: \(String(describing: settings.editingDictationId))")
+                                    #endif
                                 }) {
                                     HStack {
                                         VStack(alignment: .leading, spacing: 5) {
@@ -108,8 +117,9 @@ struct ScanTabView: View {
                                                 .font(.subheadline)
                                                 .foregroundColor(.primary)
                                             
-                                            let preview = String(entry.text.prefix(50))
-                                            Text(preview + (entry.text.count > 50 ? "..." : ""))
+                                            let sentences = entry.text.splitIntoSentences()
+                                            let preview = sentences.isEmpty ? String(entry.text.prefix(50)) : sentences[0]
+                                            Text(preview.count > 50 ? String(preview.prefix(50)) + "..." : preview)
                                                 .font(.body)
                                                 .foregroundColor(.secondary)
                                                 .lineLimit(2)
@@ -156,7 +166,8 @@ struct ScanTabView: View {
                 if let ocrError = ocrManager.error {
                     throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: ocrError])
                 }
-                selectedTab = .text
+                isEditingPastDictation = false
+                onNavigateToText(true) // Indicate programmatic navigation
             } catch {
                 errorMessage = error.localizedDescription
                 showError = true
@@ -167,6 +178,11 @@ struct ScanTabView: View {
 }
 
 #Preview {
-    ScanTabView(selectedTab: .constant(.scan))
-        .environmentObject(OCRManager())
+    ScanTabView(
+        selectedTab: .constant(.scan),
+        isEditingPastDictation: .constant(false),
+        onNavigateToText: { _ in }
+    )
+    .environmentObject(SettingsModel())
+    .environmentObject(OCRManager())
 }

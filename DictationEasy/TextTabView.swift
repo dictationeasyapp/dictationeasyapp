@@ -8,6 +8,12 @@ struct TextTabView: View {
     @Binding var selectedTab: TabSelection
     @EnvironmentObject var settings: SettingsModel
     @EnvironmentObject var ocrManager: OCRManager
+    let isEditingPastDictation: Bool
+    
+    init(selectedTab: Binding<TabSelection>, isEditingPastDictation: Bool = false) {
+        self._selectedTab = selectedTab
+        self.isEditingPastDictation = isEditingPastDictation
+    }
 
     var body: some View {
         NavigationView {
@@ -63,6 +69,8 @@ struct TextTabView: View {
                     if !settings.extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         settings.savePastDictation(text: settings.extractedText)
                     }
+                    // Set playback mode to Sentence-by-Sentence before navigating
+                    settings.playbackMode = .sentenceBySentence
                     selectedTab = .speech
                 }) {
                     Label("Confirm 確認", systemImage: "checkmark")
@@ -83,6 +91,15 @@ struct TextTabView: View {
                 if settings.extractedText.isEmpty {
                     settings.extractedText = ocrManager.extractedText
                 }
+                // Only clear editingDictationId if not editing a past dictation
+                if !isEditingPastDictation {
+                    settings.editingDictationId = nil
+                }
+                
+                #if DEBUG
+                print("TextTabView.onAppear - editingDictationId: \(String(describing: settings.editingDictationId))")
+                print("TextTabView.onAppear - isEditingPastDictation: \(isEditingPastDictation)")
+                #endif
             }
         }
     }
@@ -98,7 +115,7 @@ extension View {
 }
 
 #Preview {
-    TextTabView(selectedTab: .constant(.text))
+    TextTabView(selectedTab: .constant(.text), isEditingPastDictation: false)
         .environmentObject(SettingsModel())
         .environmentObject(OCRManager())
 }
