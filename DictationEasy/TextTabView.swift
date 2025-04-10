@@ -59,18 +59,22 @@ struct TextTabView: View {
                 .padding(.horizontal)
 
                 Button(action: {
+                    // Only save non-empty text
+                    if !settings.extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        settings.savePastDictation(text: settings.extractedText)
+                    }
                     selectedTab = .speech
                 }) {
-                    Label("Confirm 確認", systemImage: "checkmark.circle.fill")
+                    Label("Confirm 確認", systemImage: "checkmark")
                         .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(!settings.extractedText.isEmpty ? Color.blue : Color.gray)
+                        .background(Color.blue)
                         .cornerRadius(10)
                 }
-                .disabled(settings.extractedText.isEmpty)
                 .padding(.horizontal)
+                .disabled(settings.extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
                 Spacer()
             }

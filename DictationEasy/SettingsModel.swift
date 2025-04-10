@@ -74,6 +74,18 @@ enum AudioLanguage: String, CaseIterable {
     }
 }
 
+struct DictationEntry: Identifiable, Codable {
+    let id: UUID
+    let date: Date
+    let text: String
+    
+    init(id: UUID = UUID(), date: Date = Date(), text: String) {
+        self.id = id
+        self.date = date
+        self.text = text
+    }
+}
+
 @MainActor
 class SettingsModel: ObservableObject {
     @Published var playbackMode: PlaybackMode = .wholePassage
@@ -89,7 +101,14 @@ class SettingsModel: ObservableObject {
         }
     }
     @Published var sentences: [String] = []
-
+    @Published var pastDictations: [DictationEntry] = []
+    
+    private let pastDictationsKey = "PastDictations"
+    
+    init() {
+        loadPastDictations()
+    }
+    
     private func updateSentences() {
         // Split text into paragraphs first
         let paragraphs = extractedText.components(separatedBy: .newlines)
@@ -149,5 +168,33 @@ class SettingsModel: ObservableObject {
         }
 
         return processedText.trimmingCharacters(in: .whitespaces)
+    }
+    
+    func loadPastDictations() {
+        if let data = UserDefaults.standard.data(forKey: pastDictationsKey),
+           let decoded = try? JSONDecoder().decode([DictationEntry].self, from: data) {
+            self.pastDictations = decoded
+        }
+    }
+    
+    func savePastDictation(text: String) {
+        // Only save non-empty text
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else { return }
+        
+        let entry = DictationEntry(text: trimmedText)
+        pastDictations.insert(entry, at: 0) // Add new entries at the beginning
+        
+        if let encoded = try? JSONEncoder().encode(pastDictations) {
+            UserDefaults.standard.set(encoded, forKey: pastDictationsKey)
+        }
+    }
+    
+    func deletePastDictation(id: UUID) {
+        pastDictations.removeAll { $0.id == id }
+        
+        if let encoded = try? JSONEncoder().encode(pastDictations) {
+            UserDefaults.standard.set(encoded, forKey: pastDictationsKey)
+        }
     }
 }
