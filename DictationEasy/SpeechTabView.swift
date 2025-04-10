@@ -12,6 +12,10 @@ struct SpeechTabView: View {
                 Toggle("Show Text 顯示文字", isOn: $settings.showText)
                     .padding(.horizontal)
 
+                // Punctuation Toggle
+                Toggle("Including Punctuations 包含標點符號", isOn: $settings.includePunctuation)
+                    .padding(.horizontal)
+
                 // Text Display
                 if settings.showText {
                     ScrollViewReader { proxy in
@@ -99,9 +103,9 @@ struct SpeechTabView: View {
                         } else {
                             switch settings.playbackMode {
                             case .wholePassage:
-                                playbackManager.isPlaying = true  // Set before speaking to ensure proper state
+                                playbackManager.isPlaying = true
                                 ttsManager.speak(
-                                    text: settings.sentences.joined(separator: ". "),
+                                    text: settings.processTextForSpeech(settings.sentences.joined(separator: " ")),
                                     language: settings.audioLanguage,
                                     rate: settings.playbackSpeed
                                 )
@@ -109,7 +113,7 @@ struct SpeechTabView: View {
                                 if let sentence = playbackManager.getCurrentSentence() {
                                     playbackManager.isPlaying = true
                                     ttsManager.speak(
-                                        text: sentence,
+                                        text: settings.processTextForSpeech(sentence),
                                         language: settings.audioLanguage,
                                         rate: settings.playbackSpeed
                                     )
@@ -136,7 +140,7 @@ struct SpeechTabView: View {
                             ttsManager.stopSpeaking()
                             playbackManager.isPlaying = true
                             ttsManager.speak(
-                                text: settings.sentences.joined(separator: ". "),
+                                text: settings.processTextForSpeech(settings.sentences.joined(separator: " ")),
                                 language: settings.audioLanguage,
                                 rate: settings.playbackSpeed
                             )
@@ -174,7 +178,7 @@ struct SpeechTabView: View {
                             if let sentence = playbackManager.previousSentence() {
                                 playbackManager.isPlaying = true
                                 ttsManager.speak(
-                                    text: sentence,
+                                    text: settings.processTextForSpeech(sentence),
                                     language: settings.audioLanguage,
                                     rate: settings.playbackSpeed
                                 )
@@ -193,7 +197,7 @@ struct SpeechTabView: View {
                             if let sentence = playbackManager.nextSentence() {
                                 playbackManager.isPlaying = true
                                 ttsManager.speak(
-                                    text: sentence,
+                                    text: settings.processTextForSpeech(sentence),
                                     language: settings.audioLanguage,
                                     rate: settings.playbackSpeed
                                 )

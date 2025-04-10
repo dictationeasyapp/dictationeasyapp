@@ -82,6 +82,7 @@ class SettingsModel: ObservableObject {
     @Published var pauseDuration: Int = 5
     @Published var repetitions: Int = 2
     @Published var showText: Bool = true
+    @Published var includePunctuation: Bool = false
     @Published var extractedText: String = "" {
         didSet {
             updateSentences()
@@ -102,5 +103,51 @@ class SettingsModel: ObservableObject {
     func isSelectedVoiceAvailable() -> Bool {
         let voices = AVSpeechSynthesisVoice.speechVoices()
         return voices.contains { $0.language == audioLanguage.voiceIdentifier }
+    }
+
+    // Helper method to process text for audio playback
+    func processTextForSpeech(_ text: String) -> String {
+        guard includePunctuation else {
+            // If punctuation is not included, strip all punctuation marks
+            return text.replacingOccurrences(of: "[.!?。！？⋯⋯,，:：;；]", with: "", options: .regularExpression)
+        }
+
+        var processedText = text
+
+        // Define punctuation mappings based on language
+        let punctuationMappings: [(String, String)] = {
+            switch audioLanguage {
+            case .english:
+                return [
+                    ("\\.", " full stop "),
+                    ("!", " exclamation mark "),
+                    ("\\?", " question mark "),
+                    (",", " comma "),
+                    (":", " colon "),
+                    (";", " semicolon ")
+                ]
+            case .mandarin, .cantonese:
+                return [
+                    ("。", " 句號 "),
+                    ("！", " 感嘆號 "),
+                    ("？", " 問號 "),
+                    ("，", " 逗號 "),
+                    ("：", " 冒號 "),
+                    ("；", " 分號 "),
+                    ("⋯⋯", " 省略號 ")
+                ]
+            }
+        }()
+
+        // Replace each punctuation mark with its spoken description
+        for (mark, description) in punctuationMappings {
+            processedText = processedText.replacingOccurrences(
+                of: mark,
+                with: description,
+                options: .regularExpression
+            )
+        }
+
+        return processedText.trimmingCharacters(in: .whitespaces)
     }
 }

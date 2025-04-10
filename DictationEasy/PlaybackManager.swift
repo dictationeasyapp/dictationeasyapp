@@ -76,6 +76,9 @@ class PlaybackManager: ObservableObject {
         
         guard let ttsManager = self.ttsManager else { return }
 
+        // Process the sentence to include or exclude punctuation
+        let processedText = settings.processTextForSpeech(currentSentence)
+
         // Set up completion handler before speaking
         self.ttsManager?.onSpeechCompletion = { [weak self] in
             guard let self = self, self.isPlaying else { return }
@@ -100,9 +103,9 @@ class PlaybackManager: ObservableObject {
             }
         }
 
-        // Start speaking the current sentence
+        // Start speaking the processed sentence
         ttsManager.speak(
-            text: currentSentence,
+            text: processedText,
             language: settings.audioLanguage,
             rate: settings.playbackSpeed
         )
