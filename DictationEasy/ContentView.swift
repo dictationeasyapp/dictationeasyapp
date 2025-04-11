@@ -1,16 +1,11 @@
 import SwiftUI
 
-enum TabSelection: String {
-    case scan
-    case text
-    case speech
-}
-
 struct ContentView: View {
     @StateObject private var settings = SettingsModel()
     @StateObject private var ocrManager = OCRManager()
     @StateObject private var ttsManager = TTSManager()
     @StateObject private var playbackManager = PlaybackManager()
+
     @State private var selectedTab: TabSelection = .scan
     @State private var isEditingPastDictation: Bool = false
     @State private var isProgrammaticNavigation: Bool = false

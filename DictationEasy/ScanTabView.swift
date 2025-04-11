@@ -1,14 +1,14 @@
 import SwiftUI
+#if canImport(UIKit)
 import PhotosUI
 import Vision
 import Photos
 import AVFoundation
-
-#if os(iOS)
 import UIKit
 #endif
 
 struct ScanTabView: View {
+    #if canImport(UIKit)
     @EnvironmentObject var settings: SettingsModel
     @Binding var selectedTab: TabSelection
     @EnvironmentObject var ocrManager: OCRManager
@@ -309,6 +309,16 @@ struct ScanTabView: View {
             isProcessing = false
         }
     }
+    #else
+    // Fallback for platforms without UIKit (e.g., macOS)
+    var body: some View {
+        NavigationView {
+            Text("Scan feature is only available on iOS devices. 掃描功能僅在 iOS 設備上可用。")
+                .padding()
+                .navigationTitle("Scan 掃描")
+        }
+    }
+    #endif
 }
 
 #Preview {

@@ -1,6 +1,5 @@
 import SwiftUI
-
-#if os(iOS)
+#if canImport(UIKit)
 import UIKit
 #endif
 
@@ -35,10 +34,9 @@ struct TextTabView: View {
                     }
 
                 HStack(spacing: 20) {
+                    #if canImport(UIKit)
                     Button(action: {
-                        #if os(iOS)
                         UIPasteboard.general.string = settings.extractedText
-                        #endif
                     }) {
                         Label("Copy 複製", systemImage: "doc.on.doc")
                             .font(.headline)
@@ -48,6 +46,21 @@ struct TextTabView: View {
                             .background(Color.blue)
                             .cornerRadius(10)
                     }
+                    #else
+                    Button(action: {
+                        // Fallback for non-UIKit platforms (e.g., macOS)
+                        // Copying to clipboard is not supported in this preview
+                    }) {
+                        Label("Copy 複製", systemImage: "doc.on.doc")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.gray)
+                            .cornerRadius(10)
+                    }
+                    .disabled(true)
+                    #endif
 
                     Button(action: {
                         settings.extractedText = ""

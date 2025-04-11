@@ -1,4 +1,5 @@
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
 
 struct ImagePicker: UIViewControllerRepresentable {
@@ -37,4 +38,12 @@ struct ImagePicker: UIViewControllerRepresentable {
             parent.presentationMode.wrappedValue.dismiss()
         }
     }
-} 
+}
+#else
+// Fallback for platforms without UIKit (e.g., macOS)
+struct ImagePicker: View {
+    var body: some View {
+        EmptyView()
+    }
+}
+#endif
