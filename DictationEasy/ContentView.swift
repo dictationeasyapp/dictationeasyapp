@@ -43,6 +43,13 @@ struct ContentView: View {
                 .environmentObject(settings)
                 .environmentObject(ttsManager)
                 .environmentObject(playbackManager)
+            
+            SettingsTabView()
+                .tabItem {
+                    Label("Settings 設置", systemImage: "gear")
+                }
+                .tag(TabSelection.settings)
+                .environmentObject(settings)
         }
         .onChange(of: selectedTab) { newTab in
             #if DEBUG

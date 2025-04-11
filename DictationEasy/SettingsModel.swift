@@ -94,7 +94,7 @@ class SettingsModel: ObservableObject {
     @Published var sentences: [String] = []
     @Published var pastDictations: [DictationEntry] = []
     @Published var editingDictationId: UUID? = nil
-    @Published var error: String? // New property to store file system errors
+    @Published var error: String?
     
     private let pastDictationsFileURL: URL = {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -214,5 +214,33 @@ class SettingsModel: ObservableObject {
                 self.error = "Failed to delete dictation: \(error.localizedDescription) 無法刪除文章：\(error.localizedDescription)"
             }
         }
+    }
+    
+    func deleteAllPastDictations() {
+        #if DEBUG
+        print("SettingsModel.deleteAllPastDictations - Deleting all past dictations")
+        #endif
+        
+        pastDictations = []
+        
+        if let encoded = try? JSONEncoder().encode(pastDictations) {
+            do {
+                try encoded.write(to: pastDictationsFileURL, options: [.atomic, .completeFileProtection])
+                #if DEBUG
+                print("SettingsModel.deleteAllPastDictations - Successfully deleted all entries")
+                #endif
+            } catch {
+                print("SettingsModel.deleteAllPastDictations - Failed to save empty array: \(error)")
+                self.error = "Failed to delete all dictations: \(error.localizedDescription) 無法刪除所有文章：\(error.localizedDescription)"
+            }
+        } else {
+            #if DEBUG
+            print("SettingsModel.deleteAllPastDictations - Failed to encode empty array")
+            #endif
+            self.error = "Failed to delete all dictations: Unable to encode data 無法刪除所有文章：無法編碼數據"
+        }
+        
+        // Clear any editing state
+        editingDictationId = nil
     }
 }
