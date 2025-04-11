@@ -9,6 +9,8 @@ struct TextTabView: View {
     @EnvironmentObject var ocrManager: OCRManager
     let isEditingPastDictation: Bool
     
+    @State private var showSettingsError = false // New state for file system errors
+    
     init(selectedTab: Binding<TabSelection>, isEditingPastDictation: Bool = false) {
         self._selectedTab = selectedTab
         self.isEditingPastDictation = isEditingPastDictation
@@ -49,7 +51,6 @@ struct TextTabView: View {
                     #else
                     Button(action: {
                         // Fallback for non-UIKit platforms (e.g., macOS)
-                        // Copying to clipboard is not supported in this preview
                     }) {
                         Label("Copy 複製", systemImage: "doc.on.doc")
                             .font(.headline)
@@ -78,11 +79,9 @@ struct TextTabView: View {
                 .padding(.horizontal)
 
                 Button(action: {
-                    // Only save non-empty text
                     if !settings.extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         settings.savePastDictation(text: settings.extractedText)
                     }
-                    // Set playback mode to Sentence-by-Sentence before navigating
                     settings.playbackMode = .sentenceBySentence
                     selectedTab = .speech
                 }) {
@@ -100,11 +99,22 @@ struct TextTabView: View {
                 Spacer()
             }
             .navigationTitle("Text 文字")
+            .alert("Settings Error 設置錯誤", isPresented: $showSettingsError) {
+                Button("OK 確定", role: .cancel) {
+                    settings.error = nil // Clear the error after dismissal
+                }
+            } message: {
+                Text(settings.error ?? "Unknown error 未知錯誤")
+            }
+            .onChange(of: settings.error) { newError in
+                if newError != nil {
+                    showSettingsError = true
+                }
+            }
             .onAppear {
                 if settings.extractedText.isEmpty {
                     settings.extractedText = ocrManager.extractedText
                 }
-                // Only clear editingDictationId if not editing a past dictation
                 if !isEditingPastDictation {
                     settings.editingDictationId = nil
                 }

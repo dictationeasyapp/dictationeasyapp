@@ -25,6 +25,7 @@ struct ScanTabView: View {
     @State private var showCameraPermissionAlert = false
     @State private var showCameraUnavailableAlert = false
     @State private var showCamera = false
+    @State private var showSettingsError = false // New state for file system errors
 
     var body: some View {
         NavigationView {
@@ -174,11 +175,9 @@ struct ScanTabView: View {
             }
             .padding()
             .navigationTitle("Scan 掃描")
-            // Present the camera UI using Cursor's ImagePicker
             .sheet(isPresented: $showCamera) {
                 ImagePicker(selectedImage: $selectedImage, sourceType: .camera)
             }
-            // Photo Library Permission Alerts
             .alert("Photo Library Access Denied 無法訪問照片庫", isPresented: $showPermissionAlert) {
                 Button("Go to Settings 前往設置", role: .none) {
                     if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
@@ -199,7 +198,6 @@ struct ScanTabView: View {
             } message: {
                 Text("You have limited photo access. Select more photos to scan, or continue with the current selection. 您已限制照片訪問。選擇更多照片進行掃描，或繼續使用當前選擇。")
             }
-            // Camera Permission Alert
             .alert("Camera Access Denied 相機訪問被拒絕", isPresented: $showCameraPermissionAlert) {
                 Button("Go to Settings 前往設置", role: .none) {
                     if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
@@ -210,17 +208,27 @@ struct ScanTabView: View {
             } message: {
                 Text("Please enable camera access in Settings to take photos. 請在設置中啟用相機訪問以拍攝照片。")
             }
-            // Camera Unavailable Alert
             .alert("Camera Unavailable 相機不可用", isPresented: $showCameraUnavailableAlert) {
                 Button("OK 確定", role: .cancel) { }
             } message: {
                 Text("The camera is not available on this device. 該設備上相機不可用。")
             }
-            // General Error Alert
             .alert("Error 錯誤", isPresented: $showError) {
                 Button("OK 確定", role: .cancel) { }
             } message: {
                 Text(errorMessage)
+            }
+            .alert("Settings Error 設置錯誤", isPresented: $showSettingsError) {
+                Button("OK 確定", role: .cancel) {
+                    settings.error = nil // Clear the error after dismissal
+                }
+            } message: {
+                Text(settings.error ?? "Unknown error 未知錯誤")
+            }
+            .onChange(of: settings.error) { newError in
+                if newError != nil {
+                    showSettingsError = true
+                }
             }
         }
     }
@@ -229,16 +237,12 @@ struct ScanTabView: View {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         switch status {
         case .authorized:
-            // Full access granted, proceed
             showLimitedAccessMessage = false
         case .limited:
-            // Limited access granted, show message to select more photos
             showLimitedAccessMessage = true
         case .denied, .restricted:
-            // Access denied or restricted, show alert
             showPermissionAlert = true
         case .notDetermined:
-            // Request permission
             PHPhotoLibrary.requestAuthorization(for: .readWrite) { newStatus in
                 DispatchQueue.main.async {
                     switch newStatus {
@@ -259,7 +263,6 @@ struct ScanTabView: View {
     }
 
     private func checkCameraPermission() {
-        // Check if camera is available on the device
         if !UIImagePickerController.isSourceTypeAvailable(.camera) {
             showCameraUnavailableAlert = true
             return
@@ -268,13 +271,10 @@ struct ScanTabView: View {
         let status = AVCaptureDevice.authorizationStatus(for: .video)
         switch status {
         case .authorized:
-            // Camera access granted, show the camera UI
             showCamera = true
         case .denied, .restricted:
-            // Camera access denied or restricted, show alert
             showCameraPermissionAlert = true
         case .notDetermined:
-            // Request camera permission
             AVCaptureDevice.requestAccess(for: .video) { granted in
                 DispatchQueue.main.async {
                     if granted {
@@ -310,7 +310,6 @@ struct ScanTabView: View {
         }
     }
     #else
-    // Fallback for platforms without UIKit (e.g., macOS)
     var body: some View {
         NavigationView {
             Text("Scan feature is only available on iOS devices. 掃描功能僅在 iOS 設備上可用。")

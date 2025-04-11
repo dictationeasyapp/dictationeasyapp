@@ -431,8 +431,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
-				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to your camera to take photos for text extraction. 我們需要訪問您的相機以拍攝照片進行文字提取。";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need access to your photo library to scan images for text extraction.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "DictationEasy needs camera access to take photos and extract text. DictationEasy 需要相機訪問權限以拍攝照片並提取文字。";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "DictationEasy needs photo library access to scan images for text extraction. DictationEasy 需要照片庫訪問權限以掃描圖片進行文字提取。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -468,8 +468,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
-				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to your camera to take photos for text extraction. 我們需要訪問您的相機以拍攝照片進行文字提取。";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need access to your photo library to scan images for text extraction.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "DictationEasy needs camera access to take photos and extract text. DictationEasy 需要相機訪問權限以拍攝照片並提取文字。";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "DictationEasy needs photo library access to scan images for text extraction. DictationEasy 需要照片庫訪問權限以掃描圖片進行文字提取。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

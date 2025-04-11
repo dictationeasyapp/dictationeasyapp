@@ -4,19 +4,13 @@ import AVFoundation
 // String extension for sentence splitting
 extension String {
     func splitIntoSentences() -> [String] {
-        // Define punctuation patterns
         let englishPunctuation = "[.!?]"
-        let chinesePunctuation = "[。！？⋯⋯]" // Fixed to use two ellipsis characters
-        let quotesAndParens = "[\"'()（）]"   // Fixed quote escaping
+        let chinesePunctuation = "[。！？⋯⋯]"
+        let quotesAndParens = "[\"'()（）]"
         
-        // Pattern to match sentences:
-        // 1. Look for punctuation (English or Chinese)
-        // 2. Optionally followed by quotes or parentheses
-        // 3. Followed by whitespace or end of string
-        let pattern = "([^\(englishPunctuation)\(chinesePunctuation)]+[\(englishPunctuation)\(chinesePunctuation)]+[\(quotesAndParens)]*\\s*)" // Allow multiple punctuation marks
+        let pattern = "([^\\(englishPunctuation)\\(chinesePunctuation)]+[\\(englishPunctuation)\\(chinesePunctuation)]+[\\(quotesAndParens)]*\\s*)"
         
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
-            // If regex fails, return the whole text as one sentence
             return [self].filter { !$0.isEmpty }
         }
         
@@ -26,7 +20,6 @@ extension String {
         var sentences: [String] = []
         var lastEnd = 0
         
-        // Extract sentences from matches
         for match in matches {
             let range = match.range(at: 1)
             let sentence = nsString.substring(with: range)
@@ -37,7 +30,6 @@ extension String {
             lastEnd = range.location + range.length
         }
         
-        // Handle any remaining text after the last punctuation
         if lastEnd < nsString.length {
             let remainingText = nsString.substring(from: lastEnd)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -46,7 +38,6 @@ extension String {
             }
         }
         
-        // If no sentences were found, return the original text as one sentence
         return sentences.isEmpty ? [self].filter { !$0.isEmpty } : sentences
     }
 }
@@ -103,6 +94,7 @@ class SettingsModel: ObservableObject {
     @Published var sentences: [String] = []
     @Published var pastDictations: [DictationEntry] = []
     @Published var editingDictationId: UUID? = nil
+    @Published var error: String? // New property to store file system errors
     
     private let pastDictationsFileURL: URL = {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -114,12 +106,10 @@ class SettingsModel: ObservableObject {
     }
     
     private func updateSentences() {
-        // Split text into paragraphs first
         let paragraphs = extractedText.components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
         
-        // Split each paragraph into sentences and flatten the result
         sentences = paragraphs.flatMap { $0.splitIntoSentences() }
     }
 
@@ -127,17 +117,13 @@ class SettingsModel: ObservableObject {
         let voices = AVSpeechSynthesisVoice.speechVoices()
         return voices.contains { $0.language == audioLanguage.voiceIdentifier }
     }
-
-    // Helper method to process text for audio playback
+    
     func processTextForSpeech(_ text: String) -> String {
         guard includePunctuation else {
-            // If punctuation is not included, strip all punctuation marks
             return text.replacingOccurrences(of: "[.!?。！？⋯⋯,，:：;；]", with: "", options: .regularExpression)
         }
 
         var processedText = text
-
-        // Define punctuation mappings based on language
         let punctuationMappings: [(String, String)] = {
             switch audioLanguage {
             case .english:
@@ -161,8 +147,7 @@ class SettingsModel: ObservableObject {
                 ]
             }
         }()
-
-        // Replace each punctuation mark with its spoken description
+        
         for (mark, description) in punctuationMappings {
             processedText = processedText.replacingOccurrences(
                 of: mark,
@@ -170,7 +155,6 @@ class SettingsModel: ObservableObject {
                 options: .regularExpression
             )
         }
-
         return processedText.trimmingCharacters(in: .whitespaces)
     }
     
@@ -182,7 +166,6 @@ class SettingsModel: ObservableObject {
     }
     
     func savePastDictation(text: String) {
-        // Only save non-empty text
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else { return }
         
@@ -190,7 +173,6 @@ class SettingsModel: ObservableObject {
         print("SettingsModel.savePastDictation - Current editingDictationId: \(String(describing: editingDictationId))")
         #endif
         
-        // If we're editing an existing entry, remove it first
         if let editingId = editingDictationId {
             #if DEBUG
             print("SettingsModel.savePastDictation - Removing original entry with id: \(editingId)")
@@ -198,15 +180,15 @@ class SettingsModel: ObservableObject {
             deletePastDictation(id: editingId)
         }
         
-        // Create and save the new entry
         let entry = DictationEntry(text: trimmedText)
-        pastDictations.insert(entry, at: 0) // Add new entries at the beginning
+        pastDictations.insert(entry, at: 0)
         
         if let encoded = try? JSONEncoder().encode(pastDictations) {
             do {
                 try encoded.write(to: pastDictationsFileURL, options: [.atomic, .completeFileProtection])
             } catch {
                 print("Failed to save past dictations: \(error)")
+                self.error = "Failed to save dictation: \(error.localizedDescription) 無法保存文章：\(error.localizedDescription)"
             }
         }
         
@@ -214,7 +196,6 @@ class SettingsModel: ObservableObject {
         print("SettingsModel.savePastDictation - Saved new entry with id: \(entry.id)")
         #endif
         
-        // Clear the editing ID
         editingDictationId = nil
         
         #if DEBUG
@@ -230,6 +211,7 @@ class SettingsModel: ObservableObject {
                 try encoded.write(to: pastDictationsFileURL, options: [.atomic, .completeFileProtection])
             } catch {
                 print("Failed to save past dictations after deletion: \(error)")
+                self.error = "Failed to delete dictation: \(error.localizedDescription) 無法刪除文章：\(error.localizedDescription)"
             }
         }
     }
