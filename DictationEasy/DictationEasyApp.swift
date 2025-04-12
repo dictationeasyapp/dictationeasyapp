@@ -1,11 +1,9 @@
 import SwiftUI
-import GoogleMobileAds
 
 @main
 struct DictationEasyApp: App {
-    init() {
-        GADMobileAds.sharedInstance().start(completionHandler: nil)
-    }
+    // Integrate AppDelegate for UIKit lifecycle events
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
         WindowGroup {

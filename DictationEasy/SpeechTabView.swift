@@ -4,6 +4,11 @@ struct SpeechTabView: View {
     @EnvironmentObject var settings: SettingsModel
     @EnvironmentObject var ttsManager: TTSManager
     @EnvironmentObject var playbackManager: PlaybackManager
+    
+    // Placeholder to determine if the user is on the free tier (shows ads)
+    var isFreeUser: Bool {
+        return true // Replace with actual logic to check if the user is on the free tier
+    }
 
     var body: some View {
         NavigationView {
@@ -11,11 +16,11 @@ struct SpeechTabView: View {
                 // Text Display Toggle
                 Toggle("Show Text 顯示文字", isOn: $settings.showText)
                     .padding(.horizontal)
-
+                
                 // Punctuation Toggle
                 Toggle("Including Punctuations 包含標點符號", isOn: $settings.includePunctuation)
                     .padding(.horizontal)
-
+                
                 // Text Display
                 if settings.showText {
                     ScrollViewReader { proxy in
@@ -52,7 +57,7 @@ struct SpeechTabView: View {
                         }
                     }
                 }
-
+                
                 // Playback Mode Picker
                 Picker("Mode 模式", selection: $settings.playbackMode) {
                     ForEach(PlaybackMode.allCases, id: \.self) { mode in
@@ -61,7 +66,7 @@ struct SpeechTabView: View {
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
-
+                
                 // Teacher Mode Settings
                 if settings.playbackMode == .teacherMode {
                     VStack(spacing: 10) {
@@ -74,7 +79,7 @@ struct SpeechTabView: View {
                     }
                     .padding(.horizontal)
                 }
-
+                
                 // Speed Slider
                 VStack(alignment: .leading) {
                     Text("Speed 速度: \(String(format: "%.2f", settings.playbackSpeed))x")
@@ -83,7 +88,7 @@ struct SpeechTabView: View {
                            step: 0.05)
                 }
                 .padding(.horizontal)
-
+                
                 // Language Picker
                 Picker("Language 語言", selection: $settings.audioLanguage) {
                     ForEach(AudioLanguage.allCases, id: \.self) { language in
@@ -92,7 +97,7 @@ struct SpeechTabView: View {
                 }
                 .pickerStyle(.menu)
                 .padding(.horizontal)
-
+                
                 // Playback Controls
                 HStack(spacing: 20) {
                     // Play/Stop Button
@@ -133,7 +138,7 @@ struct SpeechTabView: View {
                             .cornerRadius(10)
                     }
                     .disabled(settings.sentences.isEmpty)
-
+                    
                     // Restart Button (Whole Passage mode only)
                     if settings.playbackMode == .wholePassage {
                         Button(action: {
@@ -155,7 +160,7 @@ struct SpeechTabView: View {
                         }
                         .disabled(settings.sentences.isEmpty)
                     }
-
+                    
                     // Restart Button (Teacher Mode only)
                     if settings.playbackMode == .teacherMode {
                         Button(action: {
@@ -171,7 +176,7 @@ struct SpeechTabView: View {
                                 .cornerRadius(10)
                         }
                     }
-
+                    
                     // Navigation Buttons (Sentence by Sentence mode only)
                     if settings.playbackMode == .sentenceBySentence {
                         Button(action: {
@@ -213,12 +218,12 @@ struct SpeechTabView: View {
                     }
                 }
                 .padding(.horizontal)
-
+                
                 // Progress Text
                 Text(playbackManager.getProgressText())
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-
+                
                 // Voice Availability Warning
                 if !settings.isSelectedVoiceAvailable() {
                     Text("Please download the \(settings.audioLanguage.rawValue) voice in Settings > Accessibility > Spoken Content > Voices 請在設置 > 輔助功能 > 語音內容 > 語音中下載\(settings.audioLanguage.rawValue)語音")
@@ -226,8 +231,12 @@ struct SpeechTabView: View {
                         .multilineTextAlignment(.center)
                         .padding()
                 }
-
-                Spacer()
+                
+                // Add the banner ad here, conditionally shown for free users
+                if isFreeUser {
+                    BannerAdView()
+                        .frame(height: 50) // GADAdSizeBanner is 320x50
+                }
             }
             .navigationTitle("Speech 朗讀")
             .onChange(of: settings.playbackMode) { newMode in
@@ -242,7 +251,7 @@ struct SpeechTabView: View {
             }
         }
     }
-
+    
     private func shouldHighlightSentence(index: Int) -> Bool {
         guard playbackManager.isPlaying else { return false }
         guard settings.playbackMode != .wholePassage else { return false }

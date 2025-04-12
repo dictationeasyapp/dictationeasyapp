@@ -11,6 +11,11 @@ struct TextTabView: View {
     
     @State private var showSettingsError = false // New state for file system errors
     
+    // Placeholder to determine if the user is on the free tier (shows ads)
+    var isFreeUser: Bool {
+        return true // Replace with actual logic to check if the user is on the free tier
+    }
+    
     init(selectedTab: Binding<TabSelection>, isEditingPastDictation: Bool = false) {
         self._selectedTab = selectedTab
         self.isEditingPastDictation = isEditingPastDictation
@@ -35,7 +40,6 @@ struct TextTabView: View {
                             .foregroundColor(.gray)
                             .padding()
                     }
-
                 HStack(spacing: 20) {
                     #if canImport(UIKit)
                     Button(action: {
@@ -78,7 +82,6 @@ struct TextTabView: View {
                     }
                 }
                 .padding(.horizontal)
-
                 Button(action: {
                     if !settings.extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         settings.savePastDictation(text: settings.extractedText)
@@ -96,8 +99,12 @@ struct TextTabView: View {
                 }
                 .padding(.horizontal)
                 .disabled(settings.extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-                Spacer()
+                
+                // Add the banner ad here, conditionally shown for free users
+                if isFreeUser {
+                    BannerAdView()
+                        .frame(height: 50) // GADAdSizeBanner is 320x50
+                }
             }
             .navigationTitle("Text 文字")
             .alert("Settings Error 設置錯誤", isPresented: $showSettingsError) {
