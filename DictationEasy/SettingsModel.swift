@@ -4,41 +4,49 @@ import AVFoundation
 // String extension for sentence splitting
 extension String {
     func splitIntoSentences() -> [String] {
-        let englishPunctuation = "[.!?]"
-        let chinesePunctuation = "[。！？⋯⋯]"
-        let quotesAndParens = "[\"'()（）]"
+        // Define sentence-ending punctuation
+        let punctuationSet = CharacterSet(charactersIn: ".!?。！？")
         
-        let pattern = "([^\\(englishPunctuation)\\(chinesePunctuation)]+[\\(englishPunctuation)\\(chinesePunctuation)]+[\\(quotesAndParens)]*\\s*)"
-        
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
-            return [self].filter { !$0.isEmpty }
-        }
-        
-        let nsString = self as NSString
-        let matches = regex.matches(in: self, options: [], range: NSRange(location: 0, length: nsString.length))
-        
+        // Split the string into components based on punctuation followed by whitespace
         var sentences: [String] = []
-        var lastEnd = 0
+        var currentSentence = ""
         
-        for match in matches {
-            let range = match.range(at: 1)
-            let sentence = nsString.substring(with: range)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            if !sentence.isEmpty {
-                sentences.append(sentence)
+        var characters = self[...]
+        while !characters.isEmpty {
+            // Find the next punctuation mark
+            if let range = characters.unicodeScalars.firstIndex(where: { punctuationSet.contains($0) }) {
+                // Include the punctuation in the sentence
+                let endIndex = characters.index(after: range)
+                currentSentence += String(characters[..<endIndex])
+                
+                // Move past the punctuation
+                characters = characters[endIndex...]
+                
+                // Look for whitespace after the punctuation
+                if let nextNonWhitespace = characters.unicodeScalars.firstIndex(where: { !CharacterSet.whitespacesAndNewlines.contains($0) }) {
+                    // If there's whitespace followed by more text, this is a sentence boundary
+                    sentences.append(currentSentence.trimmingCharacters(in: .whitespacesAndNewlines))
+                    currentSentence = ""
+                    characters = characters[nextNonWhitespace...]
+                } else {
+                    // If there's no more text after the punctuation, include remaining whitespace in the sentence
+                    currentSentence += String(characters)
+                    characters = Substring()
+                }
+            } else {
+                // No more punctuation; the remaining text is the last sentence
+                currentSentence += String(characters)
+                characters = Substring()
             }
-            lastEnd = range.location + range.length
         }
         
-        if lastEnd < nsString.length {
-            let remainingText = nsString.substring(from: lastEnd)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            if !remainingText.isEmpty {
-                sentences.append(remainingText)
-            }
+        // Add the last sentence if it exists
+        if !currentSentence.isEmpty {
+            sentences.append(currentSentence.trimmingCharacters(in: .whitespacesAndNewlines))
         }
         
-        return sentences.isEmpty ? [self].filter { !$0.isEmpty } : sentences
+        // Filter out empty sentences
+        return sentences.filter { !$0.isEmpty }
     }
 }
 

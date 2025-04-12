@@ -66,8 +66,7 @@ struct SpeechTabView: View {
                     VStack(spacing: 10) {
                         Stepper("Pause Duration 暫停時間: \(settings.pauseDuration)s",
                                 value: $settings.pauseDuration,
-                                in: 1...10)
-
+                                in: 1...15)  // Changed from 1...10 to 1...15
                         Stepper("Repetitions 重複次數: \(settings.repetitions)",
                                 value: $settings.repetitions,
                                 in: 1...5)
@@ -192,7 +191,6 @@ struct SpeechTabView: View {
                                 .background(Color.blue)
                                 .cornerRadius(10)
                         }
-
                         Button(action: {
                             if let sentence = playbackManager.nextSentence() {
                                 playbackManager.isPlaying = true
