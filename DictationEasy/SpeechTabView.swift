@@ -23,6 +23,7 @@ struct SpeechTabView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 ForEach(Array(settings.sentences.enumerated()), id: \.offset) { index, sentence in
                                     Text(sentence)
+                                        .font(.system(size: settings.fontSize)) // Added font size
                                         .padding(8)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .background(
@@ -66,7 +67,7 @@ struct SpeechTabView: View {
                     VStack(spacing: 10) {
                         Stepper("Pause Duration 暫停時間: \(settings.pauseDuration)s",
                                 value: $settings.pauseDuration,
-                                in: 1...15)  // Changed from 1...10 to 1...15
+                                in: 1...15)
                         Stepper("Repetitions 重複次數: \(settings.repetitions)",
                                 value: $settings.repetitions,
                                 in: 1...5)

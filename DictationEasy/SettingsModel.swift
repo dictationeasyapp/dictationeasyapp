@@ -104,12 +104,23 @@ class SettingsModel: ObservableObject {
     @Published var editingDictationId: UUID? = nil
     @Published var error: String?
     
+    @Published var fontSize: CGFloat = 16 {
+        didSet {
+            UserDefaults.standard.set(fontSize, forKey: fontSizeKey)
+        }
+    }
+    
     private let pastDictationsFileURL: URL = {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("pastDictations.json")
     }()
     
+    private let fontSizeKey = "FontSize"
+    
     init() {
+        // Initialize fontSize from UserDefaults or use default
+        self.fontSize = UserDefaults.standard.object(forKey: fontSizeKey) as? CGFloat ?? 16
+        
         loadPastDictations()
     }
     

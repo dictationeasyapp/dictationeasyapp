@@ -122,6 +122,21 @@ struct SettingsTabView: View {
                 }
                 
                 Section {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Font Size 字體大小: \(Int(settings.fontSize))pt")
+                        
+                        Slider(
+                            value: $settings.fontSize,
+                            in: 12...28,
+                            step: 1
+                        )
+                        .accessibilityLabel("Font Size Slider 字體大小滑塊")
+                    }
+                } header: {
+                    Text("Font Size 字體大小")
+                }
+                
+                Section {
                     Text(appVersion)
                         .foregroundColor(.secondary)
                         .accessibilityLabel("App Version 應用版本")

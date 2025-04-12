@@ -20,7 +20,8 @@ struct TextTabView: View {
         NavigationView {
             VStack(spacing: 20) {
                 TextEditor(text: $settings.extractedText)
-                    .font(.body)
+                    .font(.system(size: settings.fontSize))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding()
                     .background(Color(.systemGray6))
                     .cornerRadius(10)
