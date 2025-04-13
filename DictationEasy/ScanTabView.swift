@@ -27,6 +27,11 @@ struct ScanTabView: View {
     @State private var showCamera = false
     @State private var showSettingsError = false // New state for file system errors
 
+    // Placeholder to determine if the user is on the free tier (shows ads)
+    var isFreeUser: Bool {
+        return true // Replace with actual logic to check if the user is on the free tier
+    }
+
     var body: some View {
         NavigationView {
             ScrollView {
@@ -171,6 +176,9 @@ struct ScanTabView: View {
                             .padding(.horizontal)
                         }
                     }
+
+                    // Add the banner ad section at the bottom
+                    bannerAdSection
                 }
             }
             .padding()
@@ -229,6 +237,17 @@ struct ScanTabView: View {
                 if newError != nil {
                     showSettingsError = true
                 }
+            }
+        }
+    }
+
+    // MARK: - Subviews
+
+    private var bannerAdSection: some View {
+        Group {
+            if isFreeUser {
+                BannerAdView()
+                    .frame(height: 50)
             }
         }
     }
