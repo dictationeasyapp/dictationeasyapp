@@ -7,11 +7,16 @@ class PlaybackManager: ObservableObject {
     @Published var currentSentenceIndex: Int = 0
     @Published var currentRepetition: Int = 1
     @Published var isPlaying: Bool = false
+    @Published var isShuffled: Bool = false
     @Published var error: String?
 
+    private var originalSentences: [String] = []
+    private var shuffledIndices: [Int] = []
+    private var originalToShuffledIndices: [Int: Int] = [:]
     private var timer: Timer?
     private var ttsManager: TTSManagerProtocol?
     private var settings: SettingsModel?
+    private var pendingWorkItem: DispatchWorkItem?
 
     func setSentences(_ text: String) {
         // Split text into paragraphs first
@@ -20,9 +25,50 @@ class PlaybackManager: ObservableObject {
             .filter { !$0.isEmpty }
         
         // Split each paragraph into sentences and flatten the result
-        sentences = paragraphs.flatMap { $0.splitIntoSentences() }
+        originalSentences = paragraphs.flatMap { $0.splitIntoSentences() }
+        sentences = originalSentences
+        shuffledIndices = Array(0..<originalSentences.count)
+        originalToShuffledIndices.removeAll()
         currentSentenceIndex = 0
         currentRepetition = 1
+        isShuffled = false
+    }
+
+    func shuffleSentences() {
+        guard !sentences.isEmpty else { return }
+        
+        // Generate a shuffled list of indices
+        var indices = Array(0..<originalSentences.count)
+        indices.shuffle()
+        shuffledIndices = indices
+        
+        // Map original indices to shuffled positions
+        originalToShuffledIndices.removeAll()
+        for (shuffledIndex, originalIndex) in indices.enumerated() {
+            originalToShuffledIndices[originalIndex] = shuffledIndex
+        }
+        
+        // Update sentences based on shuffled indices
+        sentences = shuffledIndices.map { originalSentences[$0] }
+        
+        // Reset current sentence index to 0 so "Play" starts from the first sentence
+        currentSentenceIndex = 0
+        
+        isShuffled = true
+    }
+
+    func restoreOriginalOrder() {
+        guard !sentences.isEmpty else { return }
+        
+        // Restore original order
+        sentences = originalSentences
+        shuffledIndices = Array(0..<originalSentences.count)
+        originalToShuffledIndices.removeAll()
+        
+        // Reset current sentence index to 0 so "Play" starts from the first sentence
+        currentSentenceIndex = 0
+        
+        isShuffled = false
     }
 
     func getCurrentSentence() -> String? {
@@ -83,8 +129,8 @@ class PlaybackManager: ObservableObject {
         self.ttsManager?.onSpeechCompletion = { [weak self] in
             guard let self = self, self.isPlaying else { return }
             
-            // Schedule the next step after the pause duration
-            DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(settings.pauseDuration)) {
+            // Schedule the next step after the pause duration using DispatchWorkItem
+            let workItem = DispatchWorkItem { [weak self] in
                 Task { @MainActor [weak self] in
                     guard let self = self, self.isPlaying else { return }
                     
@@ -101,6 +147,12 @@ class PlaybackManager: ObservableObject {
                     }
                 }
             }
+            
+            // Store the work item so it can be canceled later
+            self.pendingWorkItem = workItem
+            
+            // Schedule the work item
+            DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(settings.pauseDuration), execute: workItem)
         }
 
         // Start speaking the processed sentence
@@ -117,6 +169,9 @@ class PlaybackManager: ObservableObject {
         self.ttsManager?.onSpeechCompletion = nil
         timer?.invalidate()
         timer = nil
+        // Cancel any pending DispatchWorkItem
+        pendingWorkItem?.cancel()
+        pendingWorkItem = nil
         currentRepetition = 1
         ttsManager = nil
         settings = nil
