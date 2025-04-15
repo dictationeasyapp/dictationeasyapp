@@ -13,6 +13,7 @@ struct ScanTabView: View {
     @Binding var selectedTab: TabSelection
     @EnvironmentObject var ocrManager: OCRManager
     @Binding var isEditingPastDictation: Bool
+    @EnvironmentObject var subscriptionManager: SubscriptionManager
     let onNavigateToText: (Bool) -> Void
 
     @State private var selectedItem: PhotosPickerItem?
@@ -25,11 +26,12 @@ struct ScanTabView: View {
     @State private var showCameraPermissionAlert = false
     @State private var showCameraUnavailableAlert = false
     @State private var showCamera = false
-    @State private var showSettingsError = false // New state for file system errors
+    @State private var showSettingsError = false
+    @State private var showUpgradePrompt = false // Add this for upgrade prompt
+    @State private var showSubscriptionView = false // Add this for presenting SubscriptionView
 
-    // Placeholder to determine if the user is on the free tier (shows ads)
     var isFreeUser: Bool {
-        return true // Replace with actual logic to check if the user is on the free tier
+        return !subscriptionManager.isPremium
     }
 
     var body: some View {
@@ -132,15 +134,19 @@ struct ScanTabView: View {
                         } else {
                             ForEach(settings.pastDictations) { entry in
                                 Button(action: {
-                                    settings.editingDictationId = entry.id
-                                    settings.extractedText = entry.text
-                                    isEditingPastDictation = true
-                                    onNavigateToText(true)
+                                    if subscriptionManager.isPremium {
+                                        settings.editingDictationId = entry.id
+                                        settings.extractedText = entry.text
+                                        isEditingPastDictation = true
+                                        onNavigateToText(true)
 
-                                    #if DEBUG
-                                    print("ScanTabView - Selected entry for editing: \(entry.id)")
-                                    print("ScanTabView - Set editingDictationId: \(String(describing: settings.editingDictationId))")
-                                    #endif
+                                        #if DEBUG
+                                        print("ScanTabView - Selected entry for editing: \(entry.id)")
+                                        print("ScanTabView - Set editingDictationId: \(String(describing: settings.editingDictationId))")
+                                        #endif
+                                    } else {
+                                        showUpgradePrompt = true
+                                    }
                                 }) {
                                     HStack {
                                         VStack(alignment: .leading, spacing: 5) {
@@ -166,10 +172,12 @@ struct ScanTabView: View {
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .swipeActions(edge: .trailing) {
-                                    Button(role: .destructive) {
-                                        settings.deletePastDictation(id: entry.id)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
+                                    if subscriptionManager.isPremium {
+                                        Button(role: .destructive) {
+                                            settings.deletePastDictation(id: entry.id)
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
                                     }
                                 }
                             }
@@ -177,7 +185,6 @@ struct ScanTabView: View {
                         }
                     }
 
-                    // Add the banner ad section at the bottom
                     bannerAdSection
                 }
             }
@@ -185,6 +192,10 @@ struct ScanTabView: View {
             .navigationTitle("Scan 掃描")
             .sheet(isPresented: $showCamera) {
                 ImagePicker(selectedImage: $selectedImage, sourceType: .camera)
+            }
+            .sheet(isPresented: $showSubscriptionView) {
+                SubscriptionView()
+                    .environmentObject(subscriptionManager)
             }
             .alert("Photo Library Access Denied 無法訪問照片庫", isPresented: $showPermissionAlert) {
                 Button("Go to Settings 前往設置", role: .none) {
@@ -228,10 +239,18 @@ struct ScanTabView: View {
             }
             .alert("Settings Error 設置錯誤", isPresented: $showSettingsError) {
                 Button("OK 確定", role: .cancel) {
-                    settings.error = nil // Clear the error after dismissal
+                    settings.error = nil
                 }
             } message: {
                 Text(settings.error ?? "Unknown error 未知錯誤")
+            }
+            .alert("Upgrade to Premium 升級到高級版", isPresented: $showUpgradePrompt) {
+                Button("Upgrade 升級", role: .none) {
+                    showSubscriptionView = true
+                }
+                Button("Cancel 取消", role: .cancel) { }
+            } message: {
+                Text("Unlock unlimited past dictation storage and more with a Premium subscription! 通過高級訂閱解鎖無限過去文章存儲等功能！")
             }
             .onChange(of: settings.error) { newError in
                 if newError != nil {
@@ -347,4 +366,5 @@ struct ScanTabView: View {
     )
     .environmentObject(SettingsModel())
     .environmentObject(OCRManager())
+    .environmentObject(SubscriptionManager.shared)
 }

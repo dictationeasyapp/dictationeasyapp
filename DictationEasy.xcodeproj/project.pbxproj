@@ -13,6 +13,8 @@
 		87F206B32DA2BA3C005F1592 /* Vision.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 87F206B22DA2BA3C005F1592 /* Vision.framework */; };
 		87F206B52DA2BA48005F1592 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 87F206B42DA2BA48005F1592 /* AVFoundation.framework */; };
 		87F206B72DA2BA5F005F1592 /* PhotosUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 87F206B62DA2BA5F005F1592 /* PhotosUI.framework */; };
+		87F208D32DAD548F005F1592 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 87F208D22DAD548F005F1592 /* RevenueCat */; };
+		87F208D52DAD548F005F1592 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = 87F208D42DAD548F005F1592 /* RevenueCatUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -84,7 +86,9 @@
 			files = (
 				87F206B72DA2BA5F005F1592 /* PhotosUI.framework in Frameworks */,
 				87F206B52DA2BA48005F1592 /* AVFoundation.framework in Frameworks */,
+				87F208D32DAD548F005F1592 /* RevenueCat in Frameworks */,
 				87F206B32DA2BA3C005F1592 /* Vision.framework in Frameworks */,
+				87F208D52DAD548F005F1592 /* RevenueCatUI in Frameworks */,
 				87F206B12DA2BA2B005F1592 /* SwiftUI.framework in Frameworks */,
 				87F206AF2DA2BA1C005F1592 /* UIKit.framework in Frameworks */,
 				48EBB4F411E689DDF9081CE2 /* Pods_DictationEasy.framework in Frameworks */,
@@ -251,6 +255,9 @@
 			);
 			mainGroup = 87F206772DA2B933005F1592;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				87F208D12DAD548F005F1592 /* XCRemoteSwiftPackageReference "purchases-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 87F206812DA2B933005F1592 /* Products */;
 			projectDirPath = "";
@@ -495,9 +502,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"DictationEasy/Preview Content\"";
+				DEVELOPMENT_TEAM = 4MRGG99854;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DictationEasy/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "自助默書易DictationEasy";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_NSCameraUsageDescription = "DictationEasy needs camera access to take photos and extract text. DictationEasy 需要相機訪問權限以拍攝照片並提取文字。";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "DictationEasy needs photo library access to scan images for text extraction. DictationEasy 需要照片庫訪問權限以掃描圖片進行文字提取。";
@@ -511,7 +520,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.approaster.DictationEasy;
+				PRODUCT_BUNDLE_IDENTIFIER = com.softoast.DictationEasy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -532,9 +541,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"DictationEasy/Preview Content\"";
+				DEVELOPMENT_TEAM = 4MRGG99854;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DictationEasy/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "自助默書易DictationEasy";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_NSCameraUsageDescription = "DictationEasy needs camera access to take photos and extract text. DictationEasy 需要相機訪問權限以拍攝照片並提取文字。";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "DictationEasy needs photo library access to scan images for text extraction. DictationEasy 需要照片庫訪問權限以掃描圖片進行文字提取。";
@@ -548,7 +559,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.approaster.DictationEasy;
+				PRODUCT_BUNDLE_IDENTIFIER = com.softoast.DictationEasy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -668,6 +679,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		87F208D12DAD548F005F1592 /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.21.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		87F208D22DAD548F005F1592 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 87F208D12DAD548F005F1592 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCat;
+		};
+		87F208D42DAD548F005F1592 /* RevenueCatUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 87F208D12DAD548F005F1592 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCatUI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 87F206782DA2B933005F1592 /* Project object */;
 }

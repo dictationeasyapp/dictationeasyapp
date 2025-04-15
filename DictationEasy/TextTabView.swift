@@ -7,13 +7,14 @@ struct TextTabView: View {
     @Binding var selectedTab: TabSelection
     @EnvironmentObject var settings: SettingsModel
     @EnvironmentObject var ocrManager: OCRManager
+    @EnvironmentObject var subscriptionManager: SubscriptionManager // Add this
     let isEditingPastDictation: Bool
     
     @State private var showSettingsError = false // New state for file system errors
     
-    // Placeholder to determine if the user is on the free tier (shows ads)
+    // Determine if the user is on the free tier (shows ads)
     var isFreeUser: Bool {
-        return true // Replace with actual logic to check if the user is on the free tier
+        return !subscriptionManager.isPremium
     }
     
     init(selectedTab: Binding<TabSelection>, isEditingPastDictation: Bool = false) {
@@ -149,4 +150,5 @@ extension View {
     TextTabView(selectedTab: .constant(.text), isEditingPastDictation: false)
         .environmentObject(SettingsModel())
         .environmentObject(OCRManager())
+        .environmentObject(SubscriptionManager.shared) // Add this for preview
 }

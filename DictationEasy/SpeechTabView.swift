@@ -4,10 +4,13 @@ struct SpeechTabView: View {
     @EnvironmentObject var settings: SettingsModel
     @EnvironmentObject var ttsManager: TTSManager
     @EnvironmentObject var playbackManager: PlaybackManager
+    @EnvironmentObject var subscriptionManager: SubscriptionManager
     
-    // Placeholder to determine if the user is on the free tier (shows ads)
+    @State private var showUpgradePrompt = false // For upgrade prompt
+    @State private var showSubscriptionView = false // For presenting SubscriptionView
+    
     var isFreeUser: Bool {
-        return true // Replace with actual logic to check if the user is on the free tier
+        return !subscriptionManager.isPremium
     }
 
     var body: some View {
@@ -46,6 +49,18 @@ struct SpeechTabView: View {
                 ttsManager.stopSpeaking()
                 playbackManager.setSentences(settings.extractedText)
             }
+            .sheet(isPresented: $showSubscriptionView) {
+                SubscriptionView()
+                    .environmentObject(subscriptionManager)
+            }
+            .alert("Upgrade to Premium 升級到高級版", isPresented: $showUpgradePrompt) {
+                Button("Upgrade 升級", role: .none) {
+                    showSubscriptionView = true
+                }
+                Button("Cancel 取消", role: .cancel) { }
+            } message: {
+                Text("Unlock this feature and more with a Premium subscription! 通過高級訂閱解鎖此功能等更多功能！")
+            }
         }
     }
     
@@ -57,6 +72,12 @@ struct SpeechTabView: View {
                 .padding(.horizontal)
             
             Toggle("Including Punctuations 包含標點符號", isOn: $settings.includePunctuation)
+                .onChange(of: settings.includePunctuation) { newValue in
+                    if newValue && !subscriptionManager.isPremium {
+                        showUpgradePrompt = true
+                        settings.includePunctuation = false // Revert the change
+                    }
+                }
                 .padding(.horizontal)
         }
     }
@@ -67,15 +88,17 @@ struct SpeechTabView: View {
                 // Random Order Button (moved above ScrollView)
                 if settings.playbackMode != .wholePassage {
                     Button(action: {
-                        playbackManager.stopPlayback()
-                        ttsManager.stopSpeaking()
-                        if playbackManager.isShuffled {
-                            playbackManager.restoreOriginalOrder()
+                        if subscriptionManager.isPremium {
+                            playbackManager.stopPlayback()
+                            ttsManager.stopSpeaking()
+                            if playbackManager.isShuffled {
+                                playbackManager.restoreOriginalOrder()
+                            } else {
+                                playbackManager.shuffleSentences()
+                            }
                         } else {
-                            playbackManager.shuffleSentences()
+                            showUpgradePrompt = true
                         }
-                        // Removed automatic playback in Teacher mode to match Sentence-by-Sentence mode
-                        // Playback will start manually when the user clicks "Play"
                     }) {
                         Label(playbackManager.isShuffled ? "Restore Order 恢復原序" : "Random 隨機調亂次序",
                               systemImage: playbackManager.isShuffled ? "arrow.clockwise" : "shuffle")
@@ -190,7 +213,6 @@ struct SpeechTabView: View {
                             rate: settings.playbackSpeed
                         )
                     case .sentenceBySentence:
-                        // Always start from the first sentence after shuffling
                         playbackManager.currentSentenceIndex = 0
                         if let sentence = playbackManager.getCurrentSentence() {
                             playbackManager.isPlaying = true
@@ -201,9 +223,12 @@ struct SpeechTabView: View {
                             )
                         }
                     case .teacherMode:
-                        // Already resets to 0 as per previous fix
-                        playbackManager.currentSentenceIndex = 0
-                        playbackManager.startTeacherMode(ttsManager: ttsManager, settings: settings)
+                        if subscriptionManager.isPremium {
+                            playbackManager.currentSentenceIndex = 0
+                            playbackManager.startTeacherMode(ttsManager: ttsManager, settings: settings)
+                        } else {
+                            showUpgradePrompt = true
+                        }
                     }
                 }
             }) {
@@ -253,8 +278,12 @@ struct SpeechTabView: View {
             // Restart Button (Teacher Mode only)
             if settings.playbackMode == .teacherMode {
                 Button(action: {
-                    playbackManager.currentSentenceIndex = 0
-                    playbackManager.startTeacherMode(ttsManager: ttsManager, settings: settings)
+                    if subscriptionManager.isPremium {
+                        playbackManager.currentSentenceIndex = 0
+                        playbackManager.startTeacherMode(ttsManager: ttsManager, settings: settings)
+                    } else {
+                        showUpgradePrompt = true
+                    }
                 }) {
                     Label("Restart 重新開始", systemImage: "arrow.clockwise")
                         .font(.headline)
@@ -371,4 +400,5 @@ struct SpeechTabView: View {
         .environmentObject(SettingsModel())
         .environmentObject(TTSManager())
         .environmentObject(PlaybackManager())
+        .environmentObject(SubscriptionManager.shared)
 }
